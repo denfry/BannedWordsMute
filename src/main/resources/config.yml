@@ -1,0 +1,2 @@
+mute-duration: 10
+mute-time-format: "m" # "s" - секунды, "m" - минуты, "h" - часы, "d" - дни

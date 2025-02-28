@@ -1,0 +1,20 @@
+name: BannedWordsMute
+version: '0.1'
+main: net.denfry.bannedWordsMute.BannedWordsMute
+depend: [LiteBans]
+api-version: '1.21'
+load: STARTUP
+authors: [ denfry, ZackUA ]
+description: Plugin that mutes ban words from twitch on minecraft server
+commands:
+  chatmute:
+    description: Основная команда плагина
+    usage: /<command> [reload]
+    permission: bannedwordsmute.use
+permissions:
+  bannedwordsmute.reload:
+    description: Позволяет перезагружать конфигурацию плагина
+    default: op
+  bannedwordsmute.use:
+    description: Позволяет использовать основные команды плагина
+    default: op

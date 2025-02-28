@@ -67,9 +67,6 @@ public final class BannedWordsMute extends JavaPlugin implements TabCompleter, L
                 useLiteBans = false;
                 log.severe("❌ Ошибка при проверке LiteBans API: " + e.getMessage());
             }
-        } else {
-            useLiteBans = false;
-            log.info("⚠ LiteBans не найден. Будет использован стандартный мут.");
         }
     }
 

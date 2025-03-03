@@ -1,2 +1,2 @@
 
-Auto mute players that write in chat banned words from twitch with plugin LiteBans
+Auto mute players that write in chat banned words with plugin LiteBans

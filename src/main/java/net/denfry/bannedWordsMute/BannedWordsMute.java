@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 public final class BannedWordsMute extends JavaPlugin implements TabCompleter, Listener {
 
     private boolean useLiteBans;
+    private boolean isFolia;
     private final Logger log = getLogger();
 
     @Override
@@ -47,8 +48,20 @@ public final class BannedWordsMute extends JavaPlugin implements TabCompleter, L
         getServer().getPluginManager().registerEvents(this, this);
 
         checkLiteBans();
+        checkFolia();
 
         log.info("✅ Плагин BannedWordsMute загружен!");
+    }
+
+    private void checkFolia() {
+        try {
+            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
+            isFolia = true;
+            log.info("✅ Обнаружено ядро Folia! Используем Regionized Scheduler.");
+        } catch (ClassNotFoundException e) {
+            isFolia = false;
+            log.info("ℹ Работает на Spigot/Paper. Используем стандартный Bukkit Scheduler.");
+        }
     }
 
     private void checkLiteBans() {
@@ -78,7 +91,6 @@ public final class BannedWordsMute extends JavaPlugin implements TabCompleter, L
         }
     }
 
-
     private void createFile(String fileName) {
         File file = new File(getDataFolder(), fileName);
         if (!file.exists()) {
@@ -92,27 +104,45 @@ public final class BannedWordsMute extends JavaPlugin implements TabCompleter, L
         log.info("🔄 Конфигурация перезагружена.");
     }
 
-
     public void mutePlayerLiteBans(UUID playerUUID, String playerName) {
         if (!useLiteBans) return;
 
-        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-            if (Database.get().getMute(playerUUID, null, null) != null) {
-                log.info("⚠ Игрок " + playerName + " уже замучен.");
-                return;
-            }
+        if (isFolia) {
+            Bukkit.getGlobalRegionScheduler().execute(this, () -> {
+                if (Database.get().getMute(playerUUID, null, null) != null) {
+                    log.info("⚠ Игрок " + playerName + " уже замучен.");
+                    return;
+                }
 
-            Bukkit.getScheduler().runTask(this, () -> {
                 String timeFormat = getConfig().getString("mute-time-format", "m");
                 int muteTime = getConfig().getInt("mute-duration", 10);
                 String muteReason = getRawMessage("mute-reason");
 
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-                        "tempmute " + playerUUID + " " + muteTime + timeFormat + " " + muteReason);
-
-                log.info("🔇 Игрок " + playerName + " был замучен на " + muteTime + timeFormat + " через LiteBans.");
+                Bukkit.getGlobalRegionScheduler().execute(this, () -> {
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+                            "tempmute " + playerUUID + " " + muteTime + timeFormat + " " + muteReason);
+                    log.info("🔇 Игрок " + playerName + " был замучен на " + muteTime + timeFormat + " через LiteBans.");
+                });
             });
-        });
+        } else {
+            Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+                if (Database.get().getMute(playerUUID, null, null) != null) {
+                    log.info("⚠ Игрок " + playerName + " уже замучен.");
+                    return;
+                }
+
+                Bukkit.getScheduler().runTask(this, () -> {
+                    String timeFormat = getConfig().getString("mute-time-format", "m");
+                    int muteTime = getConfig().getInt("mute-duration", 10);
+                    String muteReason = getRawMessage("mute-reason");
+
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+                            "tempmute " + playerUUID + " " + muteTime + timeFormat + " " + muteReason);
+
+                    log.info("🔇 Игрок " + playerName + " был замучен на " + muteTime + timeFormat + " через LiteBans.");
+                });
+            });
+        }
     }
 
     public List<String> getBannedWords() {
@@ -157,11 +187,15 @@ public final class BannedWordsMute extends JavaPlugin implements TabCompleter, L
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, Command command, @NotNull String alias, String @NotNull [] args) {
         List<String> completions = new ArrayList<>();
-        if (command.getName().equalsIgnoreCase("chatmute")) {
-            if (args.length == 1 && sender.hasPermission("bannedwordsmute.reload")) {
-                completions.add("reload");
-            }
+        if (command.getName().equalsIgnoreCase("chatmute") && args.length == 1 && sender.hasPermission(
+                "bannedwordsmute.reload")) {
+            completions.add("reload");
         }
         return completions;
     }
+
+    public boolean isFoliaEnabled() {
+        return isFolia;
+    }
+
 }
